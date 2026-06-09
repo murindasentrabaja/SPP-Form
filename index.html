@@ -9,15 +9,17 @@
         * { box-sizing: border-box; }
         body { font-family: Arial, Helvetica, sans-serif; background-color: #e2e8f0; margin: 0; padding: 20px; }
         
-        /* SEARCH PANEL */
+        /* SEARCH PANEL DROPDOWN STYLE */
         .search-panel {
             background: #fff; padding: 15px 25px; margin-bottom: 20px; border-radius: 12px;
             border-left: 6px solid #1c3d7a; display: flex; gap: 15px; max-width: 297mm; 
             margin: 0 auto 20px auto; align-items: center; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);
         }
-        .search-panel input { 
-            padding: 12px 15px; width: 300px; font-size: 14px; 
+        /* Mengubah styling komponen menjadi Dropdown Select */
+        .search-panel select { 
+            padding: 12px 15px; width: 350px; font-size: 14px; 
             border: 1px solid #cbd5e1; border-radius: 8px; outline: none;
+            background-color: #fff; cursor: pointer;
         }
         .search-panel button { 
             padding: 12px 24px; cursor: pointer; background: #1c3d7a; color: white; 
@@ -147,7 +149,9 @@
 <body>
 
     <div class="search-panel no-print">
-        <input type="text" id="inputIdSpp" placeholder="Masukkan ID SPP...">
+        <select id="inputIdSpp">
+            <option value="">Sedang menghubungkan ke spreadsheet...</option>
+        </select>
         <button id="btnSearch" onclick="fetchData()">Ambil Data MSB ERP System</button>
         <button class="btn-print" onclick="window.print()">Cetak Dokumen (PDF)</button>
     </div>
@@ -240,7 +244,39 @@
     </div>
 
    <script>
-        // Fungsi untuk memperbarui waktu cetak secara real-time
+        // URL Web App Google Apps Script Bawaan Anda
+        const webAppUrl = "https://script.google.com/macros/s/AKfycbz8InzdH4E8FPARzuzqsX9F5gS1IkEMfYOCWHHaHIi_yeDNP1OLb7iHoMtDH_yaBYgbpA/exec"; 
+
+        // LOGIKA OTOMATIS: Ambil seluruh data list ID SPP saat pertama kali web dibuka
+        function loadDropdownList() {
+            const selectEl = document.getElementById("inputIdSpp");
+            
+            fetch(webAppUrl + "?action=getList")
+            .then(r => r.json())
+            .then(res => {
+                if(res.status === "success" && res.data.length > 0) {
+                    selectEl.innerHTML = '<option value="">-- Pilih ID SPP --</option>';
+                    res.data.forEach(item => {
+                        let opt = document.createElement("option");
+                        opt.value = item.id;
+                        // Teks opsi format: ID SPP (Tanggal) agar mudah dibaca oleh user
+                        opt.textContent = `${item.id} (${item.tanggal})`;
+                        selectEl.appendChild(opt);
+                    });
+                } else {
+                    selectEl.innerHTML = '<option value="">-- Tidak ada data SPP ditemukan --</option>';
+                }
+            })
+            .catch(e => {
+                console.error("Gagal memuat list dropdown:", e);
+                selectEl.innerHTML = '<option value="">-- Gagal memuat database SPP --</option>';
+            });
+        }
+
+        // Jalankan fungsi pengisian dropdown secara real-time saat DOM siap
+        window.addEventListener('DOMContentLoaded', loadDropdownList);
+
+        // --- SISTEM PEMBANTU BAWAAN ---
         function updatePrintTimestamp() {
             const sekarang = new Date();
             const opsi = { 
@@ -250,37 +286,18 @@
             };
             document.getElementById("print-timestamp").innerText = sekarang.toLocaleString('id-ID', opsi).replace(/\./g, ':') + ' WIB';
         }
-        
         updatePrintTimestamp();
         window.onbeforeprint = updatePrintTimestamp;
 
-        // Fungsi Pembuat Barcode yang Anti-Crash
         function generateBarcode(text) {
-            // Bersihkan teks atau set nilai default jika data tidak ada
             let cleanText = text ? String(text).trim() : "";
-            if (!cleanText || cleanText === "-") {
-                cleanText = "BELUM ADA SPP";
-            }
-
-            // Gunakan try-catch agar error barcode tidak merusak sistem fetch data
+            if (!cleanText || cleanText === "-") { cleanText = "BELUM ADA SPP"; }
             try {
-                JsBarcode("#barcode", cleanText, {
-                    format: "CODE128",
-                    width: 1.5,
-                    height: 30,
-                    displayValue: true,
-                    fontSize: 10,
-                    margin: 0
-                });
-            } catch (error) {
-                console.warn("Kode batang gagal di-render:", error);
-            }
+                JsBarcode("#barcode", cleanText, { format: "CODE128", width: 1.5, height: 30, displayValue: true, fontSize: 10, margin: 0 });
+            } catch (error) { console.warn("Kode batang gagal di-render:", error); }
         }
-        
-        // Init Awal saat halaman pertama kali dibuka
         generateBarcode("BELUM ADA SPP");
 
-        // Render Baris Tabel Kosong
         function renderEmptyTable() {
             let html = "";
             for (let i = 1; i <= 10; i++) {
@@ -290,23 +307,22 @@
         }
         renderEmptyTable();
 
+        // Ambil ekosistem detail data berdasarkan pilihan ID SPP di dropdown
         function fetchData() {
-            const idSpp = document.getElementById("inputIdSpp").value.trim();
-            if (!idSpp) return alert("Masukkan ID SPP!");
+            const idSpp = document.getElementById("inputIdSpp").value;
+            if (!idSpp) return alert("Silakan pilih ID SPP terlebih dahulu!");
 
             const btn = document.getElementById("btnSearch");
             btn.innerHTML = "Memuat..."; btn.disabled = true;
 
-            const webAppUrl = "https://script.google.com/macros/s/AKfycbxvDgTT8_UFNZKO8FzuZHi_g6DTfUCBQJb1fERf2VwYYQIFpEKNwXestfo958XI5JSVbg/exec"; 
-            const url = webAppUrl + "?id=" + encodeURIComponent(idSpp);
+            const url = webAppUrl + "?action=getDetail&id=" + encodeURIComponent(idSpp);
 
             fetch(url)
             .then(r => r.json())
             .then(data => {
-                btn.innerHTML = "Tarik Ekosistem Data"; btn.disabled = false;
+                btn.innerHTML = "Ambil Data MSB ERP System"; btn.disabled = false;
 
                 if (data.status === "success" && data.header) {
-                    
                     document.getElementById("val-noProyek").innerText = data.header.noProyek || '-';
                     document.getElementById("val-namaProyek").innerText = data.header.namaProyek || '-';
                     document.getElementById("val-tglButuh").innerText = data.header.tglDibutuhkan || '-';
@@ -316,7 +332,6 @@
                     document.getElementById("val-tanggal").innerText = data.header.tanggal || '-';
                     document.getElementById("val-noMemo").innerText = ""; 
 
-                    // LANGSUNG masukkan variabel dari data base, BUKAN dari innerText HTML
                     generateBarcode(data.header.idSpp);
 
                     const tbody = document.getElementById("table-body");
@@ -343,9 +358,9 @@
                 }
             })
             .catch(e => {
-                console.error("Error Detail (Cek di sini untuk masalah asli):", e);
-                btn.innerHTML = "Tarik Ekosistem Data"; btn.disabled = false;
-                alert("Terjadi kesalahan. Jika URL sudah benar, silakan periksa Console Inspect Element.");
+                console.error("Error Detail:", e);
+                btn.innerHTML = "Ambil Data MSB ERP System"; btn.disabled = false;
+                alert("Terjadi kesalahan sistem saat menarik detail data.");
                 document.getElementById("val-noSpp").innerHTML = "/ &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; /";
                 generateBarcode("BELUM ADA SPP");
             });
