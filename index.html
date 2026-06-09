@@ -1,0 +1,355 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Surat Permintaan Pengadaan</title>
+    <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.5/dist/JsBarcode.all.min.js"></script>
+    <style>
+        * { box-sizing: border-box; }
+        body { font-family: Arial, Helvetica, sans-serif; background-color: #e2e8f0; margin: 0; padding: 20px; }
+        
+        /* SEARCH PANEL */
+        .search-panel {
+            background: #fff; padding: 15px 25px; margin-bottom: 20px; border-radius: 12px;
+            border-left: 6px solid #1c3d7a; display: flex; gap: 15px; max-width: 297mm; 
+            margin: 0 auto 20px auto; align-items: center; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);
+        }
+        .search-panel input { 
+            padding: 12px 15px; width: 300px; font-size: 14px; 
+            border: 1px solid #cbd5e1; border-radius: 8px; outline: none;
+        }
+        .search-panel button { 
+            padding: 12px 24px; cursor: pointer; background: #1c3d7a; color: white; 
+            border: none; font-weight: bold; border-radius: 8px; font-size: 14px; transition: background 0.2s;
+        }
+        .search-panel button:hover { background: #132b58; }
+        .btn-print { background: #64748b !important; }
+        .btn-print:hover { background: #475569 !important; }
+
+        /* KERTAS A4 LANDSCAPE */
+        .page {
+            background-color: #fff; width: 297mm; min-height: 210mm; margin: 0 auto;
+            padding: 12mm 15mm; box-shadow: 0 4px 15px rgba(0,0,0,0.05); position: relative;
+            border-radius: 8px; display: flex; flex-direction: column; justify-content: space-between;
+        }
+        @page { size: A4 landscape; margin: 0; }
+        @media print {
+            body { background-color: #fff; padding: 0; }
+            .page { width: 100%; min-height: 100vh; margin: 0; padding: 10mm; box-shadow: none; border-radius: 0; }
+            .no-print { display: none !important; }
+            .data-table tbody tr:hover { background-color: transparent !important; } 
+        }
+
+        /* HEADER AREA */
+        .header-container { display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px; }
+        
+        .logo-area { display: flex; flex-direction: column; }
+        .logo-area img { height: 35px; margin-bottom: 4px; border: none; }
+        .logo-area .company { font-size: 15px; font-weight: bold; color: #1c3d7a; letter-spacing: 0.3px; }
+        .logo-area .subsystem { font-size: 10px; color: #64748b; font-weight: bold; letter-spacing: 0.5px; margin-top: 2px; }
+        
+        /* Kotak Kebijakan / Barcode */
+        .meta-card {
+            border: 1px solid #cbd5e1; border-radius: 14px; padding: 12px 30px;
+            text-align: center; background: #fff; min-width: 340px;
+            display: flex; flex-direction: column; align-items: center; gap: 3px;
+        }
+        .meta-title { font-size: 14px; font-weight: bold; color: #000; letter-spacing: 0.5px; }
+        .meta-subtitle { font-size: 10px; font-weight: bold; color: #3b82f6; letter-spacing: 0.5px; }
+        .meta-info { font-size: 9.5px; color: #64748b; margin-bottom: 2px; }
+        .barcode-box { display: flex; justify-content: center; align-items: center; margin-top: 2px; min-height: 35px; }
+        #barcode { max-height: 35px; }
+
+        /* FORM INFO GRID */
+        .info-grid { display: flex; justify-content: space-between; margin-bottom: 20px; font-size: 11px; }
+        .info-left, .info-right { display: flex; flex-direction: column; gap: 8px; width: 48%; }
+        .info-row { display: flex; align-items: flex-end; }
+        .info-row label { width: 130px; color: #334155; }
+        .info-row .dots { flex-grow: 1; border-bottom: 1px dotted #000; min-height: 14px; font-weight: bold; padding-left: 5px; }
+
+        /* MAIN TABLE */
+        table.data-table { width: 100%; border-collapse: collapse; font-size: 11px; margin-bottom: 0; }
+        table.data-table th, table.data-table td { border: 1px solid #000; padding: 5px; }
+        table.data-table th { text-align: center; font-weight: bold; background-color: #f8fafc; }
+        
+        .data-table tbody tr { transition: background-color 0.15s ease; }
+        .data-table tbody tr:hover { background-color: #f1f5f9; cursor: pointer; }
+
+        /* Lebar Kolom */
+        .col-no { width: 3%; text-align: center; }
+        .col-desc { width: 27%; }
+        .col-type { width: 15%; }
+        .col-qty { width: 6%; text-align: center; }
+        .col-unit { width: 6%; text-align: center; }
+        .col-ket { width: 13%; }
+        .col-alt { width: 10%; } 
+        .col-alt2 { width: 10%; } 
+        .col-alt3 { width: 10%; } 
+
+        .data-row { height: 22px; }
+        
+        /* SIGNATURE AREA */
+        .signatures-wrapper {
+            display: flex; width: 100%; border: 1px solid #000; border-top: none; font-size: 10px; margin-bottom: 10px;
+        }
+        .left-sigs { width: 70%; display: flex; border-right: 1px solid #000; }
+        .right-sigs { width: 30%; display: flex; }
+        
+        .sig-box { flex: 1; border-right: 1px solid #000; display: flex; flex-direction: column; }
+        .sig-box:last-child { border-right: none; }
+        .sig-header { text-align: center; padding: 4px 0; }
+        
+        /* BACKGROUND PROTEKSI BERSIH */
+        .sig-space {
+            position: relative;
+            flex-grow: 1; min-height: 80px;
+            user-select: none; pointer-events: none;
+            background-image: radial-gradient(#94a3b8 1px, transparent 1px);
+            background-size: 8px 8px;
+            background-color: #fcfcfc;
+            display: flex; align-items: center; justify-content: center;
+            overflow: hidden;
+        }
+        .sig-space::before {
+            content: "Murinda Secure";
+            position: absolute;
+            color: rgba(148, 163, 184, 0.23);
+            font-size: 10.5px;
+            font-weight: bold;
+            transform: rotate(-25deg);
+            white-space: nowrap;
+            letter-spacing: 2px;
+            z-index: 1;
+        }
+        .sig-space::after {
+            content: "";
+            position: absolute;
+            top: 50%; left: 50%;
+            transform: translate(-50%, -50%);
+            width: 80%; height: 60%;
+            background: url('https://i.ibb.co/L9nZzV0/Murinda-Logo.png') no-repeat center;
+            background-size: contain;
+            opacity: 0.05;
+            z-index: 2;
+        }
+
+        .sig-date { border-bottom: 1px dotted #000; padding: 2px 4px; color: #475569; }
+        .sig-role { text-align: center; padding: 4px 0; font-weight: bold; background: #f8fafc; border-top: 1px solid #000; }
+
+        /* FOOTER PRINT SYSTEM METADATA */
+        .print-metadata {
+            display: flex; justify-content: space-between; font-size: 9px; color: #64748b;
+            border-top: 1px dashed #cbd5e1; padding-top: 5px; margin-top: auto;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="search-panel no-print">
+        <input type="text" id="inputIdSpp" placeholder="Masukkan ID SPP...">
+        <button id="btnSearch" onclick="fetchData()">Ambil Data MSB ERP System</button>
+        <button class="btn-print" onclick="window.print()">Cetak Dokumen (PDF)</button>
+    </div>
+
+    <div class="page">
+        <div>
+            <div class="header-container">
+                <div class="logo-area">
+                    <img src="https://upload.wikimedia.org/wikipedia/commons/c/ca/1x1.png" alt="MURINDA" id="logoImg" style="background: url('Murinda\ Logo.png') no-repeat left center; background-size: contain; width: 140px; height: 35px;">
+                    <div class="company">PT MURINDA SENTRA BAJA</div>
+                    <div class="subsystem">MSB WAREHOUSE SYSTEM</div>
+                </div>
+                
+                <div class="meta-card">
+                    <div class="meta-title">SURAT PERMINTAAN PENGADAAN (SPP)</div>
+                    <div class="meta-subtitle">(PROCUREMENT SYSTEM)</div>
+                    <div class="meta-info">No. Form: MSB/F-WH-001 | Rev: 00</div>
+                    <div class="barcode-box">
+                        <svg id="barcode"></svg>
+                    </div>
+                </div>
+            </div>
+
+            <div class="info-grid">
+                <div class="info-left">
+                    <div class="info-row"><label>Nomor Proyek</label>: <div class="dots" id="val-noProyek"></div></div>
+                    <div class="info-row"><label>Nama Proyek</label>: <div class="dots" id="val-namaProyek"></div></div>
+                    <div class="info-row"><label>Tanggal Dibutuhkan</label>: <div class="dots" id="val-tglButuh"></div></div>
+                    <div class="info-row"><label>Alamat Kirim</label>: <div class="dots" id="val-alamat"></div></div>
+                </div>
+                <div class="info-right">
+                    <div class="info-row"><label>Nomor SPP</label>: <div class="dots" id="val-noSpp"></div></div>
+                    <div class="info-row"><label>Tanggal</label>: <div class="dots" id="val-tanggal"></div></div>
+                    <div class="info-row"><label>Nomor Memo</label>: <div class="dots" id="val-noMemo"></div></div>
+                </div>
+            </div>
+
+            <table class="data-table">
+                <colgroup>
+                    <col class="col-no"><col class="col-desc"><col class="col-type"><col class="col-qty"><col class="col-unit"><col class="col-ket">
+                    <col class="col-alt"><col class="col-alt2"><col class="col-alt3">
+                </colgroup>
+                <thead>
+                    <tr>
+                        <th rowspan="2">No.</th>
+                        <th rowspan="2">Deskripsi Barang</th>
+                        <th rowspan="2">Type / Ukuran</th>
+                        <th rowspan="2">Jumlah</th>
+                        <th rowspan="2">Satuan</th>
+                        <th rowspan="2">Keterangan</th>
+                        <th colspan="3">PERBANDINGAN HARGA SATUAN<br><span style="font-weight:normal; font-size:9.5px;">( Diisi Oleh Purchasing )</span></th>
+                    </tr>
+                    <tr>
+                        <th>Alternatif 1</th>
+                        <th>Alternatif 2</th>
+                        <th>Alternatif 3</th>
+                    </tr>
+                </thead>
+                <tbody id="table-body"></tbody>
+                <tfoot>
+                    <tr>
+                        <td colspan="6" style="vertical-align: top;">Note : <br><br></td>
+                        <td style="vertical-align: bottom; font-weight: bold;">Total Harga Rp</td>
+                        <td></td>
+                        <td></td>
+                    </tr>
+                </tfoot>
+            </table>
+
+            <div class="signatures-wrapper">
+                <div class="left-sigs">
+                    <div class="sig-box"><div class="sig-header">Dibuat Oleh,</div><div class="sig-space"></div><div class="sig-date">Date :</div><div class="sig-role">User/Staff</div></div>
+                    <div class="sig-box"><div class="sig-header">Diperiksa Oleh,</div><div class="sig-space"></div><div class="sig-date">Date :</div><div class="sig-role">Foreman/Supervisor</div></div>
+                    <div class="sig-box"><div class="sig-header">Disetujui Oleh,</div><div class="sig-space"></div><div class="sig-date">Date :</div><div class="sig-role">Manager</div></div>
+                    <div class="sig-box"><div class="sig-header">Disetujui Oleh,</div><div class="sig-space"></div><div class="sig-date">Date :</div><div class="sig-role">General Manager</div></div>
+                    <div class="sig-box"><div class="sig-header">Disetujui Oleh,</div><div class="sig-space"></div><div class="sig-date">Date :</div><div class="sig-role">Procurement</div></div>
+                </div>
+                <div class="right-sigs">
+                    <div class="sig-box"><div class="sig-header">Dibuat Oleh,</div><div class="sig-space"></div><div class="sig-date">Date :</div><div class="sig-role">Purchasing</div></div>
+                    <div class="sig-box"><div class="sig-header">Disetujui Oleh,</div><div class="sig-space"></div><div class="sig-date">Date :</div><div class="sig-role">Manager</div></div>
+                    <div class="sig-box"><div class="sig-header">Disetujui Oleh,</div><div class="sig-space"></div><div class="sig-date">Date :</div><div class="sig-role">General Manager</div></div>
+                </div>
+            </div>
+        </div>
+
+        <div class="print-metadata">
+            <div>Generasi Dokumen Melalui: <strong>PT Murinda Sentra Baja ERP System</strong></div>
+            <div>Waktu Cetak: <span id="print-timestamp">-</span></div>
+        </div>
+    </div>
+
+   <script>
+        // Fungsi untuk memperbarui waktu cetak secara real-time
+        function updatePrintTimestamp() {
+            const sekarang = new Date();
+            const opsi = { 
+                year: 'numeric', month: '2-digit', day: '2-digit', 
+                hour: '2-digit', minute: '2-digit', second: '2-digit', 
+                hour12: false 
+            };
+            document.getElementById("print-timestamp").innerText = sekarang.toLocaleString('id-ID', opsi).replace(/\./g, ':') + ' WIB';
+        }
+        
+        updatePrintTimestamp();
+        window.onbeforeprint = updatePrintTimestamp;
+
+        // Fungsi Pembuat Barcode yang Anti-Crash
+        function generateBarcode(text) {
+            // Bersihkan teks atau set nilai default jika data tidak ada
+            let cleanText = text ? String(text).trim() : "";
+            if (!cleanText || cleanText === "-") {
+                cleanText = "BELUM ADA SPP";
+            }
+
+            // Gunakan try-catch agar error barcode tidak merusak sistem fetch data
+            try {
+                JsBarcode("#barcode", cleanText, {
+                    format: "CODE128",
+                    width: 1.5,
+                    height: 30,
+                    displayValue: true,
+                    fontSize: 10,
+                    margin: 0
+                });
+            } catch (error) {
+                console.warn("Kode batang gagal di-render:", error);
+            }
+        }
+        
+        // Init Awal saat halaman pertama kali dibuka
+        generateBarcode("BELUM ADA SPP");
+
+        // Render Baris Tabel Kosong
+        function renderEmptyTable() {
+            let html = "";
+            for (let i = 1; i <= 10; i++) {
+                html += `<tr class="data-row"><td class="col-no">${i}</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr>`;
+            }
+            document.getElementById("table-body").innerHTML = html;
+        }
+        renderEmptyTable();
+
+        function fetchData() {
+            const idSpp = document.getElementById("inputIdSpp").value.trim();
+            if (!idSpp) return alert("Masukkan ID SPP!");
+
+            const btn = document.getElementById("btnSearch");
+            btn.innerHTML = "Memuat..."; btn.disabled = true;
+
+            const webAppUrl = "https://script.google.com/macros/s/AKfycbxvDgTT8_UFNZKO8FzuZHi_g6DTfUCBQJb1fERf2VwYYQIFpEKNwXestfo958XI5JSVbg/exec"; 
+            const url = webAppUrl + "?id=" + encodeURIComponent(idSpp);
+
+            fetch(url)
+            .then(r => r.json())
+            .then(data => {
+                btn.innerHTML = "Tarik Ekosistem Data"; btn.disabled = false;
+
+                if (data.status === "success" && data.header) {
+                    
+                    document.getElementById("val-noProyek").innerText = data.header.noProyek || '-';
+                    document.getElementById("val-namaProyek").innerText = data.header.namaProyek || '-';
+                    document.getElementById("val-tglButuh").innerText = data.header.tglDibutuhkan || '-';
+                    document.getElementById("val-alamat").innerText = data.header.alamatKirim || '-';
+                    
+                    document.getElementById("val-noSpp").innerText = data.header.idSpp || '-';
+                    document.getElementById("val-tanggal").innerText = data.header.tanggal || '-';
+                    document.getElementById("val-noMemo").innerText = ""; 
+
+                    // LANGSUNG masukkan variabel dari data base, BUKAN dari innerText HTML
+                    generateBarcode(data.header.idSpp);
+
+                    const tbody = document.getElementById("table-body");
+                    let html = "";
+                    for (let i = 0; i < 10; i++) {
+                        let row = data.detail[i] || {};
+                        html += `
+                        <tr class="data-row">
+                            <td class="col-no">${i + 1}</td>
+                            <td>${row.namaBarang || ""}</td>
+                            <td>${row.ukuran || ""}</td>
+                            <td class="col-qty">${row.jumlah || ""}</td>
+                            <td class="col-unit">${row.satuan || ""}</td>
+                            <td>${row.keterangan || ""}</td>
+                            <td></td><td></td><td></td>
+                        </tr>`;
+                    }
+                    tbody.innerHTML = html;
+
+                } else {
+                    alert("ID SPP tidak ditemukan!");
+                    document.getElementById("val-noSpp").innerHTML = "/ &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; /";
+                    generateBarcode("BELUM ADA SPP");
+                }
+            })
+            .catch(e => {
+                console.error("Error Detail (Cek di sini untuk masalah asli):", e);
+                btn.innerHTML = "Tarik Ekosistem Data"; btn.disabled = false;
+                alert("Terjadi kesalahan. Jika URL sudah benar, silakan periksa Console Inspect Element.");
+                document.getElementById("val-noSpp").innerHTML = "/ &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; /";
+                generateBarcode("BELUM ADA SPP");
+            });
+        }
+    </script>
+</body>
+</html>
