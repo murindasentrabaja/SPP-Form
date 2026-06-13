@@ -5,21 +5,21 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Surat Permintaan Pengadaan</title>
     <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.5/dist/JsBarcode.all.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    
     <style>
         * { box-sizing: border-box; }
         body { font-family: Arial, Helvetica, sans-serif; background-color: #e2e8f0; margin: 0; padding: 20px; }
         
-        /* SEARCH PANEL DROPDOWN STYLE */
+        /* SEARCH PANEL */
         .search-panel {
             background: #fff; padding: 15px 25px; margin-bottom: 20px; border-radius: 12px;
             border-left: 6px solid #1c3d7a; display: flex; gap: 15px; max-width: 297mm; 
             margin: 0 auto 20px auto; align-items: center; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);
         }
-        /* Mengubah styling komponen menjadi Dropdown Select */
-        .search-panel select { 
-            padding: 12px 15px; width: 350px; font-size: 14px; 
-            border: 1px solid #cbd5e1; border-radius: 8px; outline: none;
-            background-color: #fff; cursor: pointer;
+        .search-select { 
+            padding: 12px 15px; width: 340px; font-size: 14px; 
+            border: 1px solid #cbd5e1; border-radius: 8px; outline: none; background: #fff;
         }
         .search-panel button { 
             padding: 12px 24px; cursor: pointer; background: #1c3d7a; color: white; 
@@ -41,6 +41,7 @@
             .page { width: 100%; min-height: 100vh; margin: 0; padding: 10mm; box-shadow: none; border-radius: 0; }
             .no-print { display: none !important; }
             .data-table tbody tr:hover { background-color: transparent !important; } 
+            .sig-card { border: 1px solid #cbd5e1 !important; }
         }
 
         /* HEADER AREA */
@@ -71,17 +72,18 @@
         .info-row .dots { flex-grow: 1; border-bottom: 1px dotted #000; min-height: 14px; font-weight: bold; padding-left: 5px; }
 
         /* MAIN TABLE */
-        table.data-table { width: 100%; border-collapse: collapse; font-size: 11px; margin-bottom: 0; }
+        table.data-table { width: 100%; border-collapse: collapse; font-size: 11px; margin-bottom: 15px; }
         table.data-table th, table.data-table td { border: 1px solid #000; padding: 5px; }
         table.data-table th { text-align: center; font-weight: bold; background-color: #f8fafc; }
         
         .data-table tbody tr { transition: background-color 0.15s ease; }
         .data-table tbody tr:hover { background-color: #f1f5f9; cursor: pointer; }
 
-        /* Lebar Kolom */
+        /* PENYESUAIAN LEBAR KOLOM TABEL */
         .col-no { width: 3%; text-align: center; }
-        .col-desc { width: 27%; }
-        .col-type { width: 15%; }
+        .col-idbarang { width: 10%; text-align: center; }
+        .col-desc { width: 20%; }
+        .col-type { width: 12%; }
         .col-qty { width: 6%; text-align: center; }
         .col-unit { width: 6%; text-align: center; }
         .col-ket { width: 13%; }
@@ -91,53 +93,72 @@
 
         .data-row { height: 22px; }
         
-        /* SIGNATURE AREA */
+        /* NEW SIGNATURE AREA (CARD DESIGN) */
         .signatures-wrapper {
-            display: flex; width: 100%; border: 1px solid #000; border-top: none; font-size: 10px; margin-bottom: 10px;
+            display: flex; width: 100%; font-size: 10px; margin-bottom: 5px; justify-content: space-between; gap: 15px;
         }
-        .left-sigs { width: 70%; display: flex; border-right: 1px solid #000; }
-        .right-sigs { width: 30%; display: flex; }
+        /* Penyesuaian Flex menjari 1:1 agar masing-masing memiliki 4 kolom yang seimbang */
+        .left-sigs, .right-sigs { display: flex; gap: 8px; flex: 1; }
         
-        .sig-box { flex: 1; border-right: 1px solid #000; display: flex; flex-direction: column; }
-        .sig-box:last-child { border-right: none; }
-        .sig-header { text-align: center; padding: 4px 0; }
-        
-        /* BACKGROUND PROTEKSI BERSIH */
-        .sig-space {
+        .sig-card {
+            flex: 1; border: 1px solid #f1f5f9; border-radius: 8px; display: flex; flex-direction: column;
+            padding: 10px 5px; align-items: center; justify-content: flex-start;
+            background-image: radial-gradient(#cbd5e1 1px, transparent 1px);
+            background-size: 10px 10px;
+            background-color: #ffffff;
             position: relative;
-            flex-grow: 1; min-height: 80px;
-            user-select: none; pointer-events: none;
-            background-image: radial-gradient(#94a3b8 1px, transparent 1px);
-            background-size: 8px 8px;
-            background-color: #fcfcfc;
-            display: flex; align-items: center; justify-content: center;
-            overflow: hidden;
+            box-shadow: inset 0 0 0 1px #e2e8f0;
         }
-        .sig-space::before {
-            content: "Murinda Secure";
-            position: absolute;
-            color: rgba(148, 163, 184, 0.23);
-            font-size: 10.5px;
-            font-weight: bold;
-            transform: rotate(-25deg);
-            white-space: nowrap;
-            letter-spacing: 2px;
-            z-index: 1;
+        
+        .sig-role-title {
+            font-size: 10.5px; font-weight: bold; color: #1e293b; margin-bottom: 2px; text-align: center;
+            background: rgba(255, 255, 255, 0.8); padding: 0 4px; border-radius: 4px;
         }
-        .sig-space::after {
-            content: "";
-            position: absolute;
-            top: 50%; left: 50%;
-            transform: translate(-50%, -50%);
-            width: 80%; height: 60%;
-            background: url('https://i.ibb.co/L9nZzV0/Murinda-Logo.png') no-repeat center;
-            background-size: contain;
-            opacity: 0.05;
-            z-index: 2;
+        
+        .sig-signed-label {
+            font-size: 9px; font-style: italic; color: #64748b; margin-bottom: 6px;
+            visibility: hidden; background: rgba(255, 255, 255, 0.8); padding: 0 4px; border-radius: 4px;
+        }
+        
+        /* WATERMARK TEXT */
+        .sig-card::before {
+            content: "MURINDA SECURE"; position: absolute; top: 45%; left: 50%;
+            transform: translate(-50%, -50%) rotate(-25deg);
+            color: rgba(148, 163, 184, 0.15); font-size: 12px; font-weight: bold;
+            white-space: nowrap; letter-spacing: 2px; z-index: 0; pointer-events: none;
         }
 
-        .sig-date { border-bottom: 1px dotted #000; padding: 2px 4px; color: #475569; }
-        .sig-role { text-align: center; padding: 4px 0; font-weight: bold; background: #f8fafc; border-top: 1px solid #000; }
+        .sig-space {
+            position: relative; width: 70px; height: 70px;
+            display: flex; align-items: center; justify-content: center;
+            z-index: 10; margin-bottom: 10px;
+        }
+        
+        .unsigned-box {
+            border: 1px dashed #94a3b8; border-radius: 6px; width: 100%; height: 100%;
+            display: flex; align-items: center; justify-content: center;
+            color: #94a3b8; font-size: 9px; text-align: center; line-height: 1.3; background: #fff;
+        }
+
+        .sig-space img, .sig-space canvas {
+            max-width: 100%; max-height: 100%; border-radius: 4px; background: #fff;
+            padding: 3px; box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+
+        .sig-name-container {
+            width: 85%; border-top: 1px solid #cbd5e1; padding-top: 6px; text-align: center; z-index: 10;
+            background: rgba(255, 255, 255, 0.8); border-radius: 4px;
+        }
+        
+        .sig-name { font-weight: bold; font-size: 10px; color: #0f172a; min-height: 12px; margin-bottom: 2px; }
+        .sig-auth { font-size: 7.5px; color: #64748b; font-family: monospace; letter-spacing: 0.5px; }
+
+        /* KETERANGAN VERIFIKASI DIGITAL */
+        .system-validation-note {
+            font-size: 9.5px; font-weight: bold; color: #1c3d7a; text-align: left; 
+            margin-bottom: 10px; font-style: italic; background-color: #f1f5f9; 
+            padding: 6px 10px; border-left: 3px solid #3b82f6; border-radius: 4px;
+        }
 
         /* FOOTER PRINT SYSTEM METADATA */
         .print-metadata {
@@ -149,8 +170,8 @@
 <body>
 
     <div class="search-panel no-print">
-        <select id="inputIdSpp">
-            <option value="">Sedang menghubungkan ke spreadsheet...</option>
+        <select id="inputIdSpp" class="search-select">
+            <option value="">Memuat daftar SPP...</option>
         </select>
         <button id="btnSearch" onclick="fetchData()">Ambil Data MSB ERP System</button>
         <button class="btn-print" onclick="window.print()">Cetak Dokumen (PDF)</button>
@@ -191,12 +212,13 @@
 
             <table class="data-table">
                 <colgroup>
-                    <col class="col-no"><col class="col-desc"><col class="col-type"><col class="col-qty"><col class="col-unit"><col class="col-ket">
+                    <col class="col-no"><col class="col-idbarang"><col class="col-desc"><col class="col-type"><col class="col-qty"><col class="col-unit"><col class="col-ket">
                     <col class="col-alt"><col class="col-alt2"><col class="col-alt3">
                 </colgroup>
                 <thead>
                     <tr>
                         <th rowspan="2">No.</th>
+                        <th rowspan="2">ID Barang</th>
                         <th rowspan="2">Deskripsi Barang</th>
                         <th rowspan="2">Type / Ukuran</th>
                         <th rowspan="2">Jumlah</th>
@@ -213,7 +235,7 @@
                 <tbody id="table-body"></tbody>
                 <tfoot>
                     <tr>
-                        <td colspan="6" style="vertical-align: top;">Note : <br><br></td>
+                        <td colspan="7" style="vertical-align: top;">Note : <br><br></td>
                         <td style="vertical-align: bottom; font-weight: bold;">Total Harga Rp</td>
                         <td></td>
                         <td></td>
@@ -222,19 +244,83 @@
             </table>
 
             <div class="signatures-wrapper">
+                
                 <div class="left-sigs">
-                    <div class="sig-box"><div class="sig-header">Dibuat Oleh,</div><div class="sig-space"></div><div class="sig-date">Date :</div><div class="sig-role">User/Staff</div></div>
-                    <div class="sig-box"><div class="sig-header">Diperiksa Oleh,</div><div class="sig-space"></div><div class="sig-date">Date :</div><div class="sig-role">Foreman/Supervisor</div></div>
-                    <div class="sig-box"><div class="sig-header">Disetujui Oleh,</div><div class="sig-space"></div><div class="sig-date">Date :</div><div class="sig-role">Manager</div></div>
-                    <div class="sig-box"><div class="sig-header">Disetujui Oleh,</div><div class="sig-space"></div><div class="sig-date">Date :</div><div class="sig-role">General Manager</div></div>
-                    <div class="sig-box"><div class="sig-header">Disetujui Oleh,</div><div class="sig-space"></div><div class="sig-date">Date :</div><div class="sig-role">Procurement</div></div>
+                    <div class="sig-card">
+                        <div class="sig-role-title">Dibuat Oleh</div>
+                        <div class="sig-signed-label" id="label-staff">Signed Digitally:</div>
+                        <div class="sig-space" id="qr-staff"><div class="unsigned-box">Belum Ada<br>Tanda Tangan</div></div>
+                        <div class="sig-name-container">
+                            <div class="sig-name" id="name-staff"></div>
+                            <div class="sig-auth" id="auth-staff"></div>
+                        </div>
+                    </div>
+                    <div class="sig-card">
+                        <div class="sig-role-title">Diperiksa Oleh</div>
+                        <div class="sig-signed-label" id="label-spv">Signed Digitally:</div>
+                        <div class="sig-space" id="qr-spv"><div class="unsigned-box">Belum Ada<br>Tanda Tangan</div></div>
+                        <div class="sig-name-container">
+                            <div class="sig-name" id="name-spv"></div>
+                            <div class="sig-auth" id="auth-spv"></div>
+                        </div>
+                    </div>
+                    <div class="sig-card">
+                        <div class="sig-role-title">Diketahui Oleh</div>
+                        <div class="sig-signed-label" id="label-manager">Signed Digitally:</div>
+                        <div class="sig-space" id="qr-manager"><div class="unsigned-box">Belum Ada<br>Tanda Tangan</div></div>
+                        <div class="sig-name-container">
+                            <div class="sig-name" id="name-manager"></div>
+                            <div class="sig-auth" id="auth-manager"></div>
+                        </div>
+                    </div>
+                    <div class="sig-card">
+                        <div class="sig-role-title">Disetujui Oleh</div>
+                        <div class="sig-signed-label" id="label-gm">Signed Digitally:</div>
+                        <div class="sig-space" id="qr-gm"><div class="unsigned-box">Belum Ada<br>Tanda Tangan</div></div>
+                        <div class="sig-name-container">
+                            <div class="sig-name" id="name-gm"></div>
+                            <div class="sig-auth" id="auth-gm"></div>
+                        </div>
+                    </div>
                 </div>
+
                 <div class="right-sigs">
-                    <div class="sig-box"><div class="sig-header">Dibuat Oleh,</div><div class="sig-space"></div><div class="sig-date">Date :</div><div class="sig-role">Purchasing</div></div>
-                    <div class="sig-box"><div class="sig-header">Disetujui Oleh,</div><div class="sig-space"></div><div class="sig-date">Date :</div><div class="sig-role">Manager</div></div>
-                    <div class="sig-box"><div class="sig-header">Disetujui Oleh,</div><div class="sig-space"></div><div class="sig-date">Date :</div><div class="sig-role">General Manager</div></div>
+                    <div class="sig-card">
+                        <div class="sig-role-title">Procurement</div>
+                        <div class="sig-space"></div>
+                        <div class="sig-name-container">
+                            <div class="sig-name"></div>
+                        </div>
+                    </div>
+                    <div class="sig-card">
+                        <div class="sig-role-title">Purchasing</div>
+                        <div class="sig-space"></div>
+                        <div class="sig-name-container">
+                            <div class="sig-name"></div>
+                        </div>
+                    </div>
+                    <div class="sig-card">
+                        <div class="sig-role-title">Manager</div>
+                        <div class="sig-space"></div>
+                        <div class="sig-name-container">
+                            <div class="sig-name"></div>
+                        </div>
+                    </div>
+                    <div class="sig-card">
+                        <div class="sig-role-title">General Manager</div>
+                        <div class="sig-space"></div>
+                        <div class="sig-name-container">
+                            <div class="sig-name"></div>
+                        </div>
+                    </div>
                 </div>
+
             </div>
+            
+            <div class="system-validation-note">
+                * Dokumen ini tidak perlu verifikasi manual karena sudah ditandatangani secara digital oleh sistem MSB dan divalidasi secara otomatis.
+            </div>
+
         </div>
 
         <div class="print-metadata">
@@ -244,78 +330,148 @@
     </div>
 
    <script>
-        // URL Web App Google Apps Script Bawaan Anda
-        const webAppUrl = "https://script.google.com/macros/s/AKfycbz8InzdH4E8FPARzuzqsX9F5gS1IkEMfYOCWHHaHIi_yeDNP1OLb7iHoMtDH_yaBYgbpA/exec"; 
+        // GANTI DENGAN LINK WEB APP APPS SCRIPT ANDA
+        const webAppUrl = "https://script.google.com/macros/s/AKfycbzyVAklynb5avMXP291oWMKIetSJUjCgqJW1VBTtpD666DFvnAyGWUE9G-4JcHtvDcwCQ/exec"; 
 
-        // LOGIKA OTOMATIS: Ambil seluruh data list ID SPP saat pertama kali web dibuka
-        function loadDropdownList() {
-            const selectEl = document.getElementById("inputIdSpp");
-            
-            fetch(webAppUrl + "?action=getList")
-            .then(r => r.json())
-            .then(res => {
-                if(res.status === "success" && res.data.length > 0) {
-                    selectEl.innerHTML = '<option value="">-- Pilih ID SPP --</option>';
-                    res.data.forEach(item => {
-                        let opt = document.createElement("option");
-                        opt.value = item.id;
-                        // Teks opsi format: ID SPP (Tanggal) agar mudah dibaca oleh user
-                        opt.textContent = `${item.id} (${item.tanggal})`;
-                        selectEl.appendChild(opt);
-                    });
-                } else {
-                    selectEl.innerHTML = '<option value="">-- Tidak ada data SPP ditemukan --</option>';
-                }
-            })
-            .catch(e => {
-                console.error("Gagal memuat list dropdown:", e);
-                selectEl.innerHTML = '<option value="">-- Gagal memuat database SPP --</option>';
-            });
-        }
-
-        // Jalankan fungsi pengisian dropdown secara real-time saat DOM siap
-        window.addEventListener('DOMContentLoaded', loadDropdownList);
-
-        // --- SISTEM PEMBANTU BAWAAN ---
         function updatePrintTimestamp() {
             const sekarang = new Date();
-            const opsi = { 
-                year: 'numeric', month: '2-digit', day: '2-digit', 
-                hour: '2-digit', minute: '2-digit', second: '2-digit', 
-                hour12: false 
-            };
+            const opsi = { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false };
             document.getElementById("print-timestamp").innerText = sekarang.toLocaleString('id-ID', opsi).replace(/\./g, ':') + ' WIB';
         }
         updatePrintTimestamp();
         window.onbeforeprint = updatePrintTimestamp;
 
+        // URL AppSheet (Hanya yang digital)
+        const signatureURLs = {
+            staff: "https://tinyurl.com/MSB-Asep-Suherman",
+            supervisor: "https://tinyurl.com/MSB-Chrisna",
+            manager: "https://tinyurl.com/Petrus-S",
+            gm: "https://tinyurl.com/Benidiktus-Kosim"
+        };
+
+        // Fungsi Generate Random Auth ID bergaya [EYM3BLBW90B25T]
+        function generateAuthID(nameString) {
+            let randomStr = Math.random().toString(36).substring(2, 12).toUpperCase();
+            let prefix = nameString.substring(0, 2).toUpperCase();
+            return `[${prefix}${randomStr}25T]`;
+        }
+
+        // FUNGSI UPDATE SIGNATURE CARD
+        function updateSignature(id, url, name) {
+            const container = document.getElementById("qr-" + id);
+            if (!container) return; // Mencegah error untuk signature manual
+            
+            const nameEl = document.getElementById("name-" + id);
+            const authEl = document.getElementById("auth-" + id);
+            const labelEl = document.getElementById("label-" + id);
+
+            if (name && name.toString().trim() !== "") {
+                container.innerHTML = ""; 
+                new QRCode(container, { text: url, width: 66, height: 66, colorDark : "#000000", colorLight : "#ffffff", correctLevel : QRCode.CorrectLevel.M });
+                
+                nameEl.innerText = name;
+                authEl.innerText = "AUTH-ID: " + generateAuthID(name);
+                labelEl.style.visibility = "visible";
+            } else {
+                container.innerHTML = '<div class="unsigned-box">Belum Ada<br>Tanda Tangan</div>';
+                nameEl.innerText = "";
+                authEl.innerText = "";
+                labelEl.style.visibility = "hidden";
+            }
+        }
+
+        function clearQRSignatures() {
+            renderQRSignatures({}); // Me-reset semua signature
+        }
+
+        // FUNGSI RENDER QR 
+        function renderQRSignatures(headerData) {
+            updateSignature("staff", signatureURLs.staff, headerData.dibuatOleh || "");
+            updateSignature("spv", signatureURLs.supervisor, headerData.diperiksaOleh || "");
+            updateSignature("manager", signatureURLs.manager, headerData.diketahuiManager || "");
+            updateSignature("gm", signatureURLs.gm, headerData.disetujuiGM || "");
+            // (Catatan: Kolom manual di sisi kanan tidak memerlukan proses ini lagi)
+        }
+
         function generateBarcode(text) {
             let cleanText = text ? String(text).trim() : "";
-            if (!cleanText || cleanText === "-") { cleanText = "BELUM ADA SPP"; }
-            try {
-                JsBarcode("#barcode", cleanText, { format: "CODE128", width: 1.5, height: 30, displayValue: true, fontSize: 10, margin: 0 });
-            } catch (error) { console.warn("Kode batang gagal di-render:", error); }
+            if (!cleanText || cleanText === "-") cleanText = "BELUM ADA SPP";
+            try { JsBarcode("#barcode", cleanText, { format: "CODE128", width: 1.5, height: 30, displayValue: true, fontSize: 10, margin: 0 }); } 
+            catch (error) { console.warn("Kode batang gagal di-render:", error); }
         }
         generateBarcode("BELUM ADA SPP");
 
         function renderEmptyTable() {
             let html = "";
             for (let i = 1; i <= 10; i++) {
-                html += `<tr class="data-row"><td class="col-no">${i}</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr>`;
+                // Diperbarui menyesuaikan jumlah kolom menjadi 10 kolom
+                html += `<tr class="data-row"><td class="col-no">${i}</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr>`;
             }
             document.getElementById("table-body").innerHTML = html;
         }
         renderEmptyTable();
 
-        // Ambil ekosistem detail data berdasarkan pilihan ID SPP di dropdown
+        // MENGAMBIL DAFTAR DROPDOWN
+        async function loadDropdownSPP() {
+            const select = document.getElementById("inputIdSpp");
+            try {
+                const response = await fetch(webAppUrl + "?action=getList");
+                const resData = await response.json();
+
+                if (resData.status === "success" && resData.data && Array.isArray(resData.data)) {
+                    
+                    // --- FUNGSI URUTKAN DESCENDING DITAMBAHKAN DI SINI ---
+                    resData.data.sort((a, b) => {
+                        let parseDate = (dateString) => {
+                            if (!dateString) return 0;
+                            // Memeriksa format umum DD/MM/YYYY atau DD-MM-YYYY
+                            let parts = dateString.split(/[\/\-]/);
+                            if (parts.length === 3 && parts[2].length === 4) {
+                                return new Date(`${parts[2]}-${parts[1]}-${parts[0]}`).getTime(); // Konversi ke YYYY-MM-DD agar dibaca JS
+                            }
+                            return new Date(dateString).getTime() || 0;
+                        };
+                        
+                        let dateA = parseDate(a.tanggal);
+                        let dateB = parseDate(b.tanggal);
+                        
+                        // Jika tanggal sama atau gagal parse, fallback: urutkan ID secara descending
+                        if (dateA === dateB || dateA === 0 || dateB === 0) {
+                            return (b.id || "").localeCompare(a.id || "");
+                        }
+                        
+                        return dateB - dateA;
+                    });
+                    // -----------------------------------------------------
+
+                    select.innerHTML = '<option value="">-- Pilih ID SPP --</option>';
+                    resData.data.forEach(item => {
+                        let sppId = item.id; 
+                        let sppTgl = item.tanggal;
+                        if (sppId) {
+                            let opt = document.createElement("option");
+                            opt.value = sppId;
+                            opt.text = `${sppId} (${sppTgl})`;
+                            select.appendChild(opt);
+                        }
+                    });
+                }
+            } catch (e) {
+                console.warn("Gagal memuat dropdown: ", e);
+            }
+        }
+        
+        window.onload = loadDropdownSPP;
+
+        // MENGAMBIL DATA DETAIL BERDASARKAN SPP YANG DIPILIH
         function fetchData() {
-            const idSpp = document.getElementById("inputIdSpp").value;
-            if (!idSpp) return alert("Silakan pilih ID SPP terlebih dahulu!");
+            const idSpp = document.getElementById("inputIdSpp").value.trim();
+            if (!idSpp) return alert("Pilih ID SPP terlebih dahulu!");
 
             const btn = document.getElementById("btnSearch");
             btn.innerHTML = "Memuat..."; btn.disabled = true;
 
-            const url = webAppUrl + "?action=getDetail&id=" + encodeURIComponent(idSpp);
+            const url = webAppUrl + "?id=" + encodeURIComponent(idSpp);
 
             fetch(url)
             .then(r => r.json())
@@ -334,6 +490,9 @@
 
                     generateBarcode(data.header.idSpp);
 
+                    // Panggil fungsi render QR Code
+                    renderQRSignatures(data.header);
+
                     const tbody = document.getElementById("table-body");
                     let html = "";
                     for (let i = 0; i < 10; i++) {
@@ -341,7 +500,7 @@
                         html += `
                         <tr class="data-row">
                             <td class="col-no">${i + 1}</td>
-                            <td>${row.namaBarang || ""}</td>
+                            <td>${row.idBarang || ""}</td> <td>${row.namaBarang || ""}</td>
                             <td>${row.ukuran || ""}</td>
                             <td class="col-qty">${row.jumlah || ""}</td>
                             <td class="col-unit">${row.satuan || ""}</td>
@@ -355,14 +514,15 @@
                     alert("ID SPP tidak ditemukan!");
                     document.getElementById("val-noSpp").innerHTML = "/ &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; /";
                     generateBarcode("BELUM ADA SPP");
+                    clearQRSignatures();
                 }
             })
             .catch(e => {
-                console.error("Error Detail:", e);
                 btn.innerHTML = "Ambil Data MSB ERP System"; btn.disabled = false;
-                alert("Terjadi kesalahan sistem saat menarik detail data.");
+                alert("Terjadi kesalahan jaringan.");
                 document.getElementById("val-noSpp").innerHTML = "/ &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; /";
                 generateBarcode("BELUM ADA SPP");
+                clearQRSignatures();
             });
         }
     </script>
